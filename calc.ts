@@ -22,4 +22,8 @@ export class Calculator {
   divide(): number {
     return this.a / this.b;
   }
+
+  remainder(): number {
+    return this.a % this.b;
+  }
 }
