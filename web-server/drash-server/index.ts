@@ -2,11 +2,12 @@ import Drash from "https://deno.land/x/drash@v0.37.1/mod.ts";
 
 import HomeResource from './resources/homeResource.ts';
 import UserResource from './resources/userResource.ts';
+import authResource from './resources/authResource.ts';
 
 const server = new Drash.Http.Server({
   address: "localhost:1447",
   response_output: "application/json",
-  resources: [HomeResource, UserResource]
+  resources: [HomeResource, UserResource, authResource]
 });
 
 server.run();
@@ -30,7 +31,8 @@ const createTables = async () => {
         CREATE TABLE users(
           NAME VARCHAR (50) NOT NULL,
           EMAIL VARCHAR (50) NOT NULL,
-          USERNAME VARCHAR (50) NOT NULL,   
+          USERNAME VARCHAR (50) NOT NULL,
+          PASSWORD VARCHAR (256) NOT NULL,
           PRIMARY KEY (USERNAME)
       );
       `;

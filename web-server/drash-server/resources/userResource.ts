@@ -1,4 +1,5 @@
 import Drash from "https://deno.land/x/drash@v0.37.1/mod.ts";
+import { Hash, encode } from "https://deno.land/x/checksum/mod.ts";
 import { denoPostgres } from '../index.ts';
 
 export default class UserResource extends Drash.Http.Resource {
@@ -26,8 +27,18 @@ export default class UserResource extends Drash.Http.Resource {
     const name = this.request.getBodyParam("name");
     const email = this.request.getBodyParam("email");
     const username = this.request.getBodyParam("username");
+    const password = this.request.getBodyParam("password");
+    if (!name || !email || !username || !password) {
+      this.response.body = {
+        'error': true,
+        'message': 'All fields are required'
+      }
+      this.response.status_code = 400;
+      return this.response;
+    } 
+    const encryptedPassword = new Hash("sha1").digest(encode(password)).hex().toString();
     await denoPostgres.connect();
-    await denoPostgres.query(`INSERT INTO users VALUES ('${name}', '${email}', '${username}')`);
+    await denoPostgres.query(`INSERT INTO users VALUES ('${name}', '${email}', '${username}', '${encryptedPassword}')`);
     this.response.body = { name, email, username };
     return this.response;
   }
