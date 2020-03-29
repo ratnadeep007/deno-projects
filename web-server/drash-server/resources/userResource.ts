@@ -1,7 +1,13 @@
 import Drash from "https://deno.land/x/drash@v0.37.1/mod.ts";
 import { Hash, encode } from "https://deno.land/x/checksum/mod.ts";
+import validateJwt from "https://deno.land/x/djwt/validate.ts"
+import makeJwt, {
+  Jose,
+  Payload,
+} from "https://deno.land/x/djwt/create.ts"
 import { denoPostgres } from '../index.ts';
 import { errorBadResponse } from '../helpers/errorResponse.ts';
+const key = "supersecret";
 
 export default class UserResource extends Drash.Http.Resource {
   static paths = ["/user"];
@@ -35,6 +41,20 @@ export default class UserResource extends Drash.Http.Resource {
     const encryptedPassword = new Hash("sha1").digest(encode(password)).hex().toString();
     await denoPostgres.connect();
     await denoPostgres.query(`INSERT INTO users VALUES ('${name}', '${email}', '${username}', '${encryptedPassword}')`);
+    const header: Jose = {
+      alg: "HS256",
+      typ: "JWT"
+    }
+    const payload: Payload = {
+      'name': name,
+      'email': email,
+      'username': username
+    }
+    const jwt = makeJwt({ header, payload }, key);
+    this.response.body = {
+      ...payload,
+      "token": jwt
+    }
     this.response.body = { name, email, username };
     return this.response;
   }

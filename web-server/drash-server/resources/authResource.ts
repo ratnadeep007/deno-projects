@@ -1,5 +1,12 @@
 import Drash from "https://deno.land/x/drash@v0.37.1/mod.ts";
 import { Hash, encode } from "https://deno.land/x/checksum/mod.ts";
+import validateJwt from "https://deno.land/x/djwt/validate.ts"
+import makeJwt, {
+  Jose,
+  Payload,
+} from "https://deno.land/x/djwt/create.ts"
+
+const key = "supersecret"
 import { denoPostgres } from '../index.ts';
 import { errorBadResponse } from '../helpers/errorResponse.ts';
 
@@ -25,10 +32,19 @@ export default class AuthResource extends Drash.Http.Resource {
       if (user[3] != encryptedPassword) {
         return errorBadResponse(this.response, 'Password is wrong', false);
       }
-      this.response.body = {
+      const header: Jose = {
+        alg: "HS256",
+        typ: "JWT"
+      }
+      const payload: Payload = {
         'name': user[0],
         'email': user[1],
-        'password': user[2]
+        'username': user[2]
+      }
+      const jwt = makeJwt({ header, payload }, key);
+      this.response.body = {
+        ...payload,
+        "token": jwt
       }
       return this.response;
     } catch(e) {
