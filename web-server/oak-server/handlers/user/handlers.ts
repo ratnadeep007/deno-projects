@@ -1,6 +1,7 @@
 import { Context } from "https://deno.land/x/oak/mod.ts";
 import { Hash, encode } from "https://deno.land/x/checksum/mod.ts";
 import { denoPostgres } from "../../index.ts";
+import { errorBadResponse, errorInternalServer } from '../../helpers/errorResponse.ts';
 
 export const getUsers = async (context: Context) => {
   try {
@@ -18,7 +19,7 @@ export const getUsers = async (context: Context) => {
     context.response.body = returnObj;
   } catch(e) {
     console.log(e);
-    context.response.body = e;
+    context = errorInternalServer(context);
   }
 }
 
@@ -29,11 +30,7 @@ export const addUser = async (context: Context) => {
       const data = await context.request.body();
       const body = data.value;
       if (!body['username'] || !body['password'] || !body['name'] || !body['email']) {
-        context.response.status = 400;
-        context.response.body = {
-          'error': true,
-          'message': 'All fields are required'
-        }  
+        context = errorBadResponse(context, 'All fields are required', true);
       }
       const encryptedPassword = new Hash("sha1").digest(encode(body['password'])).hex().toString();
       await denoPostgres.query(`INSERT INTO users VALUES ('${body['name']}', '${body['email']}', '${body['username']}', '${encryptedPassword}')`);
@@ -44,14 +41,14 @@ export const addUser = async (context: Context) => {
         'username': body['username']
       }
     } else {
-      context.response.status = 400;
-      context.response.body = {
-        'error': true,
-        'message': 'All fields are required'
-      }
+      context = errorBadResponse(context, 'All fields are required', true);
     }
   } catch(e) {
     console.log(e);
-    context.response.body = e;
+    if (e['fields'] && e['fields']['message'] && e['fields']['detail']) {
+      context = errorBadResponse(context, e['fields']['message'] + ', ' + e['fields']['detail'], true);
+    } else {
+      context = errorInternalServer(context);
+    }
   }
 }
