@@ -4,8 +4,11 @@ import HomeResource from './resources/homeResource.ts';
 import UserResource from './resources/userResource.ts';
 import authResource from './resources/authResource.ts';
 
+
+const port = Deno.env()['PORT'] || 3000;
+
 const server = new Drash.Http.Server({
-  address: "localhost:1447",
+  address: `0.0.0.0:${port}`,
   response_output: "application/json",
   resources: [HomeResource, UserResource, authResource]
 });
@@ -13,7 +16,10 @@ const server = new Drash.Http.Server({
 server.run();
 
 import { Client } from "https://deno.land/x/postgres/mod.ts";
-const denoPostgres = new Client({
+
+const dbUrl = Deno.env()['DATABASE_URL'];
+
+const denoPostgres = dbUrl ? new Client(dbUrl) : new Client({
   database: "deno_postgres",
   host: "localhost",
   port: "5432",
